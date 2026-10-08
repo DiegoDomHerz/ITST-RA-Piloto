@@ -17,9 +17,52 @@
 
 <body>
 
-  <div id="estado">
-    Apunta la cámara hacia IMG-001
+
+  <!-- Interfaz de usuario WebAR -->
+  <div id="interfaz-ar">
+
+    <!-- Encabezado -->
+    <header class="ar-header">
+      <div class="ar-brand">
+        <span class="ar-logo">ITST</span>
+        <span class="ar-subtitle" id="subtitulo">
+          Guía educativa con realidad aumentada
+        </span>
+      </div>
+
+      <!-- Selector de idioma -->
+      <div class="idiomas">
+        <button id="btn-es" class="idioma activo" type="button">
+          ES
+        </button>
+        <button id="btn-en" class="idioma" type="button">
+          EN
+        </button>
+      </div>
+    </header>
+
+    <!-- Información del recurso -->
+    <section class="ar-panel">
+
+      <div class="ar-status">
+        <span class="status-dot"></span>
+        <span id="estado">
+          Apunta la cámara hacia una imagen de la guía
+        </span>
+      </div>
+
+      <h2 id="recurso-titulo">
+        Explorador de realidad aumentada
+      </h2>
+
+      <p id="recurso-descripcion">
+        Escanea una imagen para descubrir su contenido en 3D.
+      </p>
+
+    </section>
+
   </div>
+
 
   <a-scene mindar-image="imageTargetSrc: ./targets/TARGETS-ITST.mind;
                   autoStart: true;
