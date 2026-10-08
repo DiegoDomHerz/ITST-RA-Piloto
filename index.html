@@ -21,7 +21,7 @@
     Apunta la cámara hacia IMG-001
   </div>
 
-  <a-scene mindar-image="imageTargetSrc: ./targets/TARGET-003.mind;
+  <a-scene mindar-image="imageTargetSrc: ./targets/TARGETS-ITST.mind;
                   autoStart: true;
                   uiLoading: yes;
                   uiScanning: yes;
@@ -31,14 +31,27 @@
     <!-- Cámara -->
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    <!-- TARGET-001 -->
+    <!-- IMG-001: Modelo de prueba -->
     <a-entity id="target-001" mindar-image-target="targetIndex: 0">
-
-      <a-entity id="modelo-003" gltf-model="url(./models/MODELO-003-Deadpool.glb)" position="0 0 0.1" rotation="0 0 0"
-        scale="1.5 1.5 1.5">
-      </a-entity>
-
+      <a-box position="0 0 0.1" color="#1E88E5" scale="0.3 0.3 0.3"
+        animation="property: rotation; to: 0 360 0; loop: true; dur: 4000">
+      </a-box>
     </a-entity>
+
+    <!-- IMG-002: Sistema Solar -->
+    <a-entity id="target-002" mindar-image-target="targetIndex: 1">
+      <a-entity id="modelo-002" gltf-model="url(./models/MODELO-002.glb)" position="0 0 0.1" rotation="0 0 0"
+        scale="0.75 0.75 0.75">
+      </a-entity>
+    </a-entity>
+
+    <!-- IMG-003: Deadpool -->
+    <a-entity id="target-003" mindar-image-target="targetIndex: 2">
+      <a-entity id="modelo-003" gltf-model="url(./models/MODELO-003-Deadpool.glb)" position="0 0 0.1" rotation="0 0 0"
+        scale="0.1 0.1 0.1">
+      </a-entity>
+    </a-entity>
+
 
   </a-scene>
 
