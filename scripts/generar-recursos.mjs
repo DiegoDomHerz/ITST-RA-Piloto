@@ -27,7 +27,7 @@ const estilo = `
   .idioma button[aria-pressed="true"] { background: var(--azul); color: #fff; border-color: var(--azul); }
   .id { color: #5d5e67; font-size: 14px; margin: 18px 0 2px; }
   h1 { margin: 0 0 14px; font-size: 26px; line-height: 1.2; }
-  img { width: 100%; border-radius: 12px; background: #fff; }
+  img { display: block; width: 100%; max-height: 40vh; object-fit: contain; border-radius: 12px; background: #fff; }
   p { font-size: 17px; line-height: 1.5; }
   audio { width: 100%; margin: 6px 0 18px; }
   .boton { display: block; text-align: center; padding: 15px; border-radius: 999px; font-weight: 600; text-decoration: none; margin: 10px 0; }
