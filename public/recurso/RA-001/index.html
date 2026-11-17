@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prueba 1: cubo tridimensional · Guía RA ITST</title>
+<style>
+  :root { color-scheme: light; --azul: #1E5AA8; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: #f5f7fb; color: #1b1b1f; }
+  main { max-width: 560px; margin: 0 auto; padding: 20px 18px 40px; }
+  header { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .marca { color: var(--azul); font-weight: 700; }
+  .idioma button { border: 1px solid #c5c6d0; background: #fff; border-radius: 999px; padding: 6px 12px; font: inherit; cursor: pointer; }
+  .idioma button[aria-pressed="true"] { background: var(--azul); color: #fff; border-color: var(--azul); }
+  .id { color: #5d5e67; font-size: 14px; margin: 18px 0 2px; }
+  h1 { margin: 0 0 14px; font-size: 26px; line-height: 1.2; }
+  img { width: 100%; border-radius: 12px; background: #fff; }
+  p { font-size: 17px; line-height: 1.5; }
+  audio { width: 100%; margin: 6px 0 18px; }
+  .boton { display: block; text-align: center; padding: 15px; border-radius: 999px; font-weight: 600; text-decoration: none; margin: 10px 0; }
+  .principal { background: var(--azul); color: #fff; }
+  .secundario { border: 1px solid #c5c6d0; color: var(--azul); background: #fff; }
+  .nota { font-size: 14px; color: #5d5e67; }
+  section[lang]:not(.activo) { display: none; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <span class="marca">ITST · Guía RA</span>
+    <span class="idioma"><button data-l="es">ES</button> <button data-l="en">EN</button></span>
+  </header>
+
+  <section lang="es">
+    <p class="id">RA-001</p>
+    <h1>Prueba 1: cubo tridimensional</h1>
+    <img src="../media/img-001.png" alt="Prueba 1: cubo tridimensional">
+    <p>Recurso de demostración para validar el reconocimiento de imágenes. Al detectar la ilustración aparece un cubo que gira sobre ella.</p>
+    <audio controls preload="none" src="../media/ra-001-es.wav"></audio>
+    <a class="boton principal solo-android" href="intent://recurso/RA-001#Intent;scheme=guiara;package=mx.edu.itst.guiara;S.browser_fallback_url=https%3A%2F%2Fdiegodomherz.github.io%2FITST-RA-Piloto%2Fdescargar%2F;end">Abrir en la app (Realidad Aumentada)</a>
+    <a class="boton secundario" href="https://diegodomherz.github.io/ITST-RA-Piloto/descargar/">Descargar la app</a>
+    <p class="nota">La experiencia de Realidad Aumentada se consulta desde la app. Esta página permite revisar el contenido sin RA.</p>
+  </section>
+  <section lang="en">
+    <p class="id">RA-001</p>
+    <h1>Test 1: 3D cube</h1>
+    <img src="../media/img-001.png" alt="Test 1: 3D cube">
+    <p>Demo resource used to validate image recognition. When the illustration is detected, a spinning cube appears on top of it.</p>
+    <audio controls preload="none" src="../media/ra-001-en.wav"></audio>
+    <a class="boton principal solo-android" href="intent://recurso/RA-001#Intent;scheme=guiara;package=mx.edu.itst.guiara;S.browser_fallback_url=https%3A%2F%2Fdiegodomherz.github.io%2FITST-RA-Piloto%2Fdescargar%2F;end">Open in the app (Augmented Reality)</a>
+    <a class="boton secundario" href="https://diegodomherz.github.io/ITST-RA-Piloto/descargar/">Download the app</a>
+    <p class="nota">The Augmented Reality experience is available in the app. This page shows the content without AR.</p>
+  </section>
+</main>
+<script>
+  const elegir = (l) => {
+    document.querySelectorAll('section[lang]').forEach(e => e.classList.toggle('activo', e.lang === l));
+    document.querySelectorAll('.idioma button').forEach(b => b.setAttribute('aria-pressed', b.dataset.l === l));
+    document.querySelectorAll('audio').forEach(a => a.pause());
+    document.documentElement.lang = l;
+  };
+  document.querySelectorAll('.idioma button').forEach(b => b.onclick = () => elegir(b.dataset.l));
+  elegir((navigator.language || 'es').toLowerCase().startsWith('es') ? 'es' : 'en');
+  // El botón «Abrir en la app» solo tiene sentido en Android
+  if (!/android/i.test(navigator.userAgent)) document.querySelectorAll('.solo-android').forEach(e => e.remove());
+</script>
+</body>
+</html>

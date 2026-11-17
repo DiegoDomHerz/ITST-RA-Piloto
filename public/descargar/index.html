@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Descargar la app · Guía RA ITST</title>
+<style>
+  :root { color-scheme: light; --azul: #1E5AA8; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: #f5f7fb; color: #1b1b1f; }
+  main { max-width: 560px; margin: 0 auto; padding: 20px 18px 40px; }
+  header { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .marca { color: var(--azul); font-weight: 700; }
+  .idioma button { border: 1px solid #c5c6d0; background: #fff; border-radius: 999px; padding: 6px 12px; font: inherit; cursor: pointer; }
+  .idioma button[aria-pressed="true"] { background: var(--azul); color: #fff; border-color: var(--azul); }
+  .id { color: #5d5e67; font-size: 14px; margin: 18px 0 2px; }
+  h1 { margin: 0 0 14px; font-size: 26px; line-height: 1.2; }
+  img { width: 100%; border-radius: 12px; background: #fff; }
+  p { font-size: 17px; line-height: 1.5; }
+  audio { width: 100%; margin: 6px 0 18px; }
+  .boton { display: block; text-align: center; padding: 15px; border-radius: 999px; font-weight: 600; text-decoration: none; margin: 10px 0; }
+  .principal { background: var(--azul); color: #fff; }
+  .secundario { border: 1px solid #c5c6d0; color: var(--azul); background: #fff; }
+  .nota { font-size: 14px; color: #5d5e67; }
+  section[lang]:not(.activo) { display: none; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <span class="marca">ITST · Guía RA</span>
+    <span class="idioma"><button data-l="es">ES</button> <button data-l="en">EN</button></span>
+  </header>
+
+  <section lang="es">
+    <h1>Guía de recursos educativos con Realidad Aumentada</h1>
+    <p>Descarga la aplicación para Android (7.0 o superior) y consulta los recursos de la guía con Realidad Aumentada, audio y modelos 3D.</p>
+    <a class="boton principal" href="https://github.com/DiegoDomHerz/ITST-RA-Piloto/releases/latest/download/GuiaRA-ITST.apk">Descargar la app (APK)</a>
+    <ol class="nota"><li>Pulsa «Descargar la app».</li><li>Abre el archivo descargado y permite la instalación desde esta fuente si el teléfono lo solicita.</li><li>Abre la app y pulsa «Escanear la guía» o escanea el código QR de un recurso.</li></ol>
+  </section>
+  <section lang="en">
+    <h1>Educational resources guide with Augmented Reality</h1>
+    <p>Download the Android app (7.0 or later) to explore the guide resources with Augmented Reality, audio and 3D models.</p>
+    <a class="boton principal" href="https://github.com/DiegoDomHerz/ITST-RA-Piloto/releases/latest/download/GuiaRA-ITST.apk">Download the app (APK)</a>
+    <ol class="nota"><li>Tap “Download the app”.</li><li>Open the downloaded file and allow installation from this source if your phone asks.</li><li>Open the app and tap “Scan the guide” or scan a resource QR code.</li></ol>
+  </section>
+</main>
+<script>
+  const elegir = (l) => {
+    document.querySelectorAll('section[lang]').forEach(e => e.classList.toggle('activo', e.lang === l));
+    document.querySelectorAll('.idioma button').forEach(b => b.setAttribute('aria-pressed', b.dataset.l === l));
+    document.querySelectorAll('audio').forEach(a => a.pause());
+    document.documentElement.lang = l;
+  };
+  document.querySelectorAll('.idioma button').forEach(b => b.onclick = () => elegir(b.dataset.l));
+  elegir((navigator.language || 'es').toLowerCase().startsWith('es') ? 'es' : 'en');
+  // El botón «Abrir en la app» solo tiene sentido en Android
+  if (!/android/i.test(navigator.userAgent)) document.querySelectorAll('.solo-android').forEach(e => e.remove());
+</script>
+</body>
+</html>
