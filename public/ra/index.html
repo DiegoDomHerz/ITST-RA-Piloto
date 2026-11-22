@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RA sobre la guía · Guía RA ITST</title>
+<script src="lib/aframe.min.js"></script>
+<script src="lib/mindar-image-aframe.prod.js"></script>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .capa { position: fixed; left: 12px; right: 12px; z-index: 10; }
+  .arriba { top: 12px; display: flex; gap: 8px; align-items: flex-start; }
+  .abajo { bottom: 16px; }
+  .boton { background: #1E5AA8; color: #fff; text-decoration: none; padding: 10px 16px; border-radius: 999px; font-weight: 600; white-space: nowrap; }
+  .mensaje, .ficha { background: rgba(255,255,255,.94); border-radius: 14px; padding: 12px 14px; font-size: 15px; line-height: 1.4; }
+  .mensaje { flex: 1; }
+  .ficha small { color: #5d5e67; } .ficha h2 { margin: 2px 0 6px; font-size: 20px; } .ficha p { margin: 0 0 10px; }
+  .ficha a { color: #1E5AA8; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="capa arriba"><a class="boton" id="volver" href="#">‹</a><div class="mensaje" id="mensaje"></div></div>
+<div class="capa abajo"><div class="ficha" id="ficha" hidden></div></div>
+<a-scene id="escena" mindar-image="imageTargetSrc: targets.mind; autoStart: false; maxTrack: 1; uiLoading: yes; uiScanning: no; uiError: yes"
+    color-space="sRGB" renderer="colorManagement: true" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+  <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+  <a-light type="ambient" intensity="0.9"></a-light>
+  <a-light type="directional" position="0 1 1" intensity="0.8"></a-light>
+</a-scene>
+<script>
+  const RECURSOS = [{"id":"RA-001","es":{"nombre":"Prueba 1: cubo tridimensional","desc":"Recurso de demostración para validar el reconocimiento de imágenes. Al detectar la ilustración aparece un cubo que gira sobre ella."},"en":{"nombre":"Test 1: 3D cube","desc":"Demo resource used to validate image recognition. When the illustration is detected, a spinning cube appears on top of it."},"tipo":"cubo","modelo":null},{"id":"RA-002","es":{"nombre":"Sistema Solar","desc":"Representación tridimensional del Sistema Solar para observar la posición relativa de los planetas."},"en":{"nombre":"Solar System","desc":"3D representation of the Solar System showing the relative position of the planets."},"tipo":"modelo","modelo":"../recurso/media/modelo-002.glb"},{"id":"RA-003","es":{"nombre":"Objeto digitalizado por fotogrametría","desc":"Modelo obtenido con KIRI Engine a partir de fotografías de un objeto físico. Se utiliza solo para validar el proceso de digitalización."},"en":{"nombre":"Photogrammetry-scanned object","desc":"Model created with KIRI Engine from photographs of a physical object. Used only to validate the scanning process."},"tipo":"modelo","modelo":"../recurso/media/modelo-003.glb"}];
+  const q = new URLSearchParams(location.search);
+  const L = q.get('lang') === 'en' || (!q.get('lang') && !(navigator.language || 'es').toLowerCase().startsWith('es')) ? 'en' : 'es';
+  const T = {
+    es: { apunta: 'Apunta la cámara a una ilustración de la guía impresa.', noReconoce: '¿No se reconoce? Aleja el teléfono para que la ilustración se vea completa y mejora la luz.',
+          ficha: 'Ver ficha, audio y modelo 3D', camara: 'No se pudo abrir la cámara. Permite el acceso a la cámara en el navegador e inténtalo de nuevo.' },
+    en: { apunta: 'Point the camera at an illustration in the printed guide.', noReconoce: 'Not recognized? Move the phone back so the whole illustration is visible and improve the lighting.',
+          ficha: 'View sheet, audio and 3D model', camara: 'The camera could not be opened. Allow camera access in the browser and try again.' },
+  }[L];
+  document.documentElement.lang = L;
+  const origen = q.get('r');
+  document.getElementById('volver').href = origen ? '../recurso/' + origen + '/' : '../';
+  const mensaje = document.getElementById('mensaje'), ficha = document.getElementById('ficha');
+  mensaje.textContent = T.apunta;
+
+  // Escala cada modelo para que su lado mayor mida 0.6 del ancho de la ilustración y lo apoya sobre ella
+  AFRAME.registerComponent('ajustar-tamano', { init() { this.el.addEventListener('model-loaded', () => {
+    const THREE = AFRAME.THREE, obj = this.el.getObject3D('mesh'), padre = obj.parent;
+    padre.remove(obj); obj.updateMatrixWorld(true); const caja = new THREE.Box3().setFromObject(obj); padre.add(obj);
+    const dim = caja.getSize(new THREE.Vector3()), s = 0.6 / (Math.max(dim.x, dim.y, dim.z) || 1);
+    this.el.object3D.scale.set(s, s, s); obj.position.sub(caja.getCenter(new THREE.Vector3())); this.el.object3D.position.z = dim.z * s / 2;
+  }); } });
+
+  let actual = null, sinDeteccion = 0;
+  setInterval(() => { sinDeteccion = actual ? 0 : sinDeteccion + 1; if (!actual) mensaje.textContent = sinDeteccion >= 10 ? T.noReconoce : T.apunta; }, 1000);
+  // Muestra la ficha del recurso reconocido (o el mensaje de guía si no hay ninguno)
+  const mostrar = r => {
+    actual = r;
+    mensaje.hidden = !!r;
+    ficha.hidden = !r;
+    if (!r) return;
+    ficha.innerHTML = '<small>' + r.id + '</small><h2></h2><p></p><a href="../recurso/' + r.id + '/?lang=' + L + '">' + T.ficha + '</a>';
+    ficha.querySelector('h2').textContent = r[L].nombre;
+    ficha.querySelector('p').textContent = r[L].desc;
+  };
+
+  const escena = document.getElementById('escena');
+  const iniciar = () => {
+    RECURSOS.forEach((r, i) => {
+      const ancla = document.createElement('a-entity');
+      ancla.setAttribute('mindar-image-target', 'targetIndex: ' + i);
+      let c;
+      if (r.tipo === 'cubo') {
+        c = document.createElement('a-box');
+        c.setAttribute('position', '0 0 0.25'); c.setAttribute('scale', '0.5 0.5 0.5'); c.setAttribute('color', '#1E5AA8');
+        c.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 4000; easing: linear');
+      } else if (r.modelo) {
+        c = document.createElement('a-entity'); c.setAttribute('gltf-model', 'url(' + r.modelo + ')'); c.setAttribute('ajustar-tamano', '');
+      }
+      if (c) ancla.appendChild(c);
+      ancla.addEventListener('targetFound', () => mostrar(r));
+      ancla.addEventListener('targetLost', () => { if (actual === r) mostrar(null); });
+      escena.appendChild(ancla);
+    });
+    setTimeout(() => escena.systems['mindar-image-system'].start(), 0);
+  };
+  escena.addEventListener('arError', () => { mensaje.textContent = T.camara; });
+  if (escena.hasLoaded) iniciar(); else escena.addEventListener('loaded', iniciar);
+</script>
+</body>
+</html>

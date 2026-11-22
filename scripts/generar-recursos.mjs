@@ -37,12 +37,29 @@ const estilo = `
   section[lang]:not(.activo) { display: none; }
   h2 { font-size: 18px; margin: 18px 0 8px; }
   model-viewer { display: block; width: 100%; height: 340px; background: #fff; border-radius: 12px; --poster-color: #fff; }
+  .aviso-ar { background: #FFF4E5; border-radius: 10px; padding: 10px 12px; font-size: 15px; }
   model-viewer .ar { position: absolute; left: 12px; right: 12px; bottom: 12px; margin: 0; border: 0; font: inherit; font-weight: 600; cursor: pointer; }
 `;
 
 // Visor 3D web: <model-viewer> de Google. Permite girar el modelo y, en teléfonos con servicios
 // de RA (Scene Viewer en Android, Quick Look en iOS), colocarlo en el espacio sin instalar la app.
 const MODEL_VIEWER = '<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>';
+
+// Si la RA del sistema no puede iniciar (p. ej. teléfono sin ARCore), se oculta el botón y se explica por qué.
+// Scene Viewer regresa a la página con #model-viewer-no-ar-fallback cuando no está disponible.
+const AVISO_SIN_AR = `<script>
+  const sinAr = () => {
+    // Se desactiva la RA del visor (si solo se quitara el botón, aparecería el ícono de RA predeterminado)
+    document.querySelectorAll('model-viewer').forEach(mv => mv.removeAttribute('ar'));
+    document.querySelectorAll('.aviso-ar').forEach(p => p.hidden = false);
+  };
+  document.addEventListener('DOMContentLoaded', () => {
+    if (location.hash.includes('no-ar-fallback')) sinAr();
+    document.querySelectorAll('model-viewer').forEach(mv =>
+      mv.addEventListener('ar-status', e => { if (e.detail.status === 'failed') sinAr(); }));
+  });
+  addEventListener('hashchange', () => { if (location.hash.includes('no-ar-fallback')) sinAr(); });
+</script>`;
 
 /** Genera un cubo GLB (lado en metros, color RGB 0–1) para el recurso de prueba que la app dibuja por código. */
 function crearCuboGlb(salida, lado, color) {
@@ -146,7 +163,10 @@ for (const r of recursos) {
         shadow-intensity="0.8" ar ar-modes="scene-viewer webxr quick-look" ar-scale="auto">
       <button slot="ar-button" class="boton principal ar">${txt.ar}</button>
     </model-viewer>
+    <p class="aviso-ar" hidden>${txt.sinAr}</p>
     <p class="nota">${txt.girar}</p>` : ''}
+    <a class="boton principal" href="../../ra/?r=${r.id}&amp;lang=${l}">${txt.raGuia}</a>
+    <p class="nota">${txt.raGuiaNota}</p>
     <a class="boton principal solo-android" href="${esc(intento)}">${txt.abrir}</a>
     <a class="boton secundario" href="${descarga}">${txt.descargar}</a>
     <p class="nota">${txt.nota}</p>
@@ -159,6 +179,9 @@ for (const r of recursos) {
             modelo: 'Modelo 3D',
             ar: 'Ver en tu espacio (RA)',
             girar: 'Arrastra para girar el modelo y pellizca para acercarlo. Si tu teléfono lo permite, «Ver en tu espacio» lo coloca sobre una superficie real.',
+            sinAr: 'Tu teléfono no es compatible con la RA de Google (requiere ARCore). Puedes girar el modelo aquí, usar «Ver en RA sobre la guía» o abrir la app.',
+            raGuia: 'Ver en RA sobre la guía (sin instalar)',
+            raGuiaNota: 'Abre la cámara en el navegador y muestra el modelo sobre la ilustración impresa. Funciona en la mayoría de los teléfonos.',
         }) +
         bloque('en', r.nombre_en, r.descripcion_en, {
             abrir: 'Open in the app (Augmented Reality)',
@@ -167,12 +190,122 @@ for (const r of recursos) {
             modelo: '3D model',
             ar: 'View in your space (AR)',
             girar: 'Drag to rotate the model and pinch to zoom. If your phone supports it, “View in your space” places it on a real surface.',
-        }), MODEL_VIEWER);
+            sinAr: 'Your phone does not support Google AR (it requires ARCore). You can rotate the model here, use “View in AR on the guide” or open the app.',
+            raGuia: 'View in AR on the guide (no install)',
+            raGuiaNota: 'Opens the camera in the browser and shows the model on the printed illustration. Works on most phones.',
+        }), MODEL_VIEWER + AVISO_SIN_AR);
     const dir = path.join(publico, 'recurso', r.id);
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(path.join(dir, 'index.html'), html);
     console.log(`recurso/${r.id}/`);
 }
+
+// ---------- RA sobre la ilustración en el navegador (/ra/) ----------
+// Misma tecnología que el motor alternativo de la app (MindAR + A-Frame) y los mismos archivos:
+// targets.mind y las bibliotecas se copian de assets/webar; los modelos, de recurso/media.
+// Funciona en teléfonos sin ARCore y sin instalar la app (el navegador solo necesita la cámara y HTTPS).
+const dirRa = path.join(publico, 'ra');
+fs.mkdirSync(path.join(dirRa, 'lib'), { recursive: true });
+for (const f of ['lib/aframe.min.js', 'lib/mindar-image-aframe.prod.js', 'targets.mind']) {
+    fs.copyFileSync(path.join(assets, 'webar', f), path.join(dirRa, f));
+}
+const datosRa = recursos.map(r => ({
+    id: r.id, es: { nombre: r.nombre_es, desc: r.descripcion_es }, en: { nombre: r.nombre_en, desc: r.descripcion_en },
+    tipo: r.tipo, modelo: r.modelo ? `../recurso/media/${path.basename(r.modelo)}` : null,
+}));
+fs.writeFileSync(path.join(dirRa, 'index.html'), `<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RA sobre la guía · Guía RA ITST</title>
+<script src="lib/aframe.min.js"></script>
+<script src="lib/mindar-image-aframe.prod.js"></script>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .capa { position: fixed; left: 12px; right: 12px; z-index: 10; }
+  .arriba { top: 12px; display: flex; gap: 8px; align-items: flex-start; }
+  .abajo { bottom: 16px; }
+  .boton { background: #1E5AA8; color: #fff; text-decoration: none; padding: 10px 16px; border-radius: 999px; font-weight: 600; white-space: nowrap; }
+  .mensaje, .ficha { background: rgba(255,255,255,.94); border-radius: 14px; padding: 12px 14px; font-size: 15px; line-height: 1.4; }
+  .mensaje { flex: 1; }
+  .ficha small { color: #5d5e67; } .ficha h2 { margin: 2px 0 6px; font-size: 20px; } .ficha p { margin: 0 0 10px; }
+  .ficha a { color: #1E5AA8; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="capa arriba"><a class="boton" id="volver" href="#">‹</a><div class="mensaje" id="mensaje"></div></div>
+<div class="capa abajo"><div class="ficha" id="ficha" hidden></div></div>
+<a-scene id="escena" mindar-image="imageTargetSrc: targets.mind; autoStart: false; maxTrack: 1; uiLoading: yes; uiScanning: no; uiError: yes"
+    color-space="sRGB" renderer="colorManagement: true" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+  <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+  <a-light type="ambient" intensity="0.9"></a-light>
+  <a-light type="directional" position="0 1 1" intensity="0.8"></a-light>
+</a-scene>
+<script>
+  const RECURSOS = ${JSON.stringify(datosRa)};
+  const q = new URLSearchParams(location.search);
+  const L = q.get('lang') === 'en' || (!q.get('lang') && !(navigator.language || 'es').toLowerCase().startsWith('es')) ? 'en' : 'es';
+  const T = {
+    es: { apunta: 'Apunta la cámara a una ilustración de la guía impresa.', noReconoce: '¿No se reconoce? Aleja el teléfono para que la ilustración se vea completa y mejora la luz.',
+          ficha: 'Ver ficha, audio y modelo 3D', camara: 'No se pudo abrir la cámara. Permite el acceso a la cámara en el navegador e inténtalo de nuevo.' },
+    en: { apunta: 'Point the camera at an illustration in the printed guide.', noReconoce: 'Not recognized? Move the phone back so the whole illustration is visible and improve the lighting.',
+          ficha: 'View sheet, audio and 3D model', camara: 'The camera could not be opened. Allow camera access in the browser and try again.' },
+  }[L];
+  document.documentElement.lang = L;
+  const origen = q.get('r');
+  document.getElementById('volver').href = origen ? '../recurso/' + origen + '/' : '../';
+  const mensaje = document.getElementById('mensaje'), ficha = document.getElementById('ficha');
+  mensaje.textContent = T.apunta;
+
+  // Escala cada modelo para que su lado mayor mida 0.6 del ancho de la ilustración y lo apoya sobre ella
+  AFRAME.registerComponent('ajustar-tamano', { init() { this.el.addEventListener('model-loaded', () => {
+    const THREE = AFRAME.THREE, obj = this.el.getObject3D('mesh'), padre = obj.parent;
+    padre.remove(obj); obj.updateMatrixWorld(true); const caja = new THREE.Box3().setFromObject(obj); padre.add(obj);
+    const dim = caja.getSize(new THREE.Vector3()), s = 0.6 / (Math.max(dim.x, dim.y, dim.z) || 1);
+    this.el.object3D.scale.set(s, s, s); obj.position.sub(caja.getCenter(new THREE.Vector3())); this.el.object3D.position.z = dim.z * s / 2;
+  }); } });
+
+  let actual = null, sinDeteccion = 0;
+  setInterval(() => { sinDeteccion = actual ? 0 : sinDeteccion + 1; if (!actual) mensaje.textContent = sinDeteccion >= 10 ? T.noReconoce : T.apunta; }, 1000);
+  // Muestra la ficha del recurso reconocido (o el mensaje de guía si no hay ninguno)
+  const mostrar = r => {
+    actual = r;
+    mensaje.hidden = !!r;
+    ficha.hidden = !r;
+    if (!r) return;
+    ficha.innerHTML = '<small>' + r.id + '</small><h2></h2><p></p><a href="../recurso/' + r.id + '/?lang=' + L + '">' + T.ficha + '</a>';
+    ficha.querySelector('h2').textContent = r[L].nombre;
+    ficha.querySelector('p').textContent = r[L].desc;
+  };
+
+  const escena = document.getElementById('escena');
+  const iniciar = () => {
+    RECURSOS.forEach((r, i) => {
+      const ancla = document.createElement('a-entity');
+      ancla.setAttribute('mindar-image-target', 'targetIndex: ' + i);
+      let c;
+      if (r.tipo === 'cubo') {
+        c = document.createElement('a-box');
+        c.setAttribute('position', '0 0 0.25'); c.setAttribute('scale', '0.5 0.5 0.5'); c.setAttribute('color', '#1E5AA8');
+        c.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 4000; easing: linear');
+      } else if (r.modelo) {
+        c = document.createElement('a-entity'); c.setAttribute('gltf-model', 'url(' + r.modelo + ')'); c.setAttribute('ajustar-tamano', '');
+      }
+      if (c) ancla.appendChild(c);
+      ancla.addEventListener('targetFound', () => mostrar(r));
+      ancla.addEventListener('targetLost', () => { if (actual === r) mostrar(null); });
+      escena.appendChild(ancla);
+    });
+    setTimeout(() => escena.systems['mindar-image-system'].start(), 0);
+  };
+  escena.addEventListener('arError', () => { mensaje.textContent = T.camara; });
+  if (escena.hasLoaded) iniciar(); else escena.addEventListener('loaded', iniciar);
+</script>
+</body>
+</html>
+`);
+console.log('ra/');
 
 // Página del QR de descarga
 const descargar = (l, t) => `
