@@ -23,7 +23,11 @@
   .secundario { border: 1px solid #c5c6d0; color: var(--azul); background: #fff; }
   .nota { font-size: 14px; color: #5d5e67; }
   section[lang]:not(.activo) { display: none; }
+  h2 { font-size: 18px; margin: 18px 0 8px; }
+  model-viewer { display: block; width: 100%; height: 340px; background: #fff; border-radius: 12px; --poster-color: #fff; }
+  model-viewer .ar { position: absolute; left: 12px; right: 12px; bottom: 12px; margin: 0; border: 0; font: inherit; font-weight: 600; cursor: pointer; }
 </style>
+<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
 </head>
 <body>
 <main>
@@ -38,9 +42,15 @@
     <img src="../media/img-003.jpg" alt="Objeto digitalizado por fotogrametría">
     <p>Modelo obtenido con KIRI Engine a partir de fotografías de un objeto físico. Se utiliza solo para validar el proceso de digitalización.</p>
     <audio controls preload="none" src="../media/ra-003-es.wav"></audio>
+    <h2>Modelo 3D</h2>
+    <model-viewer src="../media/modelo-003.glb" alt="Objeto digitalizado por fotogrametría" camera-controls auto-rotate touch-action="pan-y"
+        shadow-intensity="0.8" ar ar-modes="scene-viewer webxr quick-look" ar-scale="auto">
+      <button slot="ar-button" class="boton principal ar">Ver en tu espacio (RA)</button>
+    </model-viewer>
+    <p class="nota">Arrastra para girar el modelo y pellizca para acercarlo. Si tu teléfono lo permite, «Ver en tu espacio» lo coloca sobre una superficie real.</p>
     <a class="boton principal solo-android" href="intent://recurso/RA-003#Intent;scheme=guiara;package=mx.edu.itst.guiara;S.browser_fallback_url=https%3A%2F%2Fdiegodomherz.github.io%2FITST-RA-Piloto%2Fdescargar%2F;end">Abrir en la app (Realidad Aumentada)</a>
     <a class="boton secundario" href="https://diegodomherz.github.io/ITST-RA-Piloto/descargar/">Descargar la app</a>
-    <p class="nota">La experiencia de Realidad Aumentada se consulta desde la app. Esta página permite revisar el contenido sin RA.</p>
+    <p class="nota">La RA sobre la ilustración de la guía se consulta desde la app. Esta página permite revisar el contenido y el modelo 3D sin instalarla.</p>
   </section>
   <section lang="en">
     <p class="id">RA-003</p>
@@ -48,9 +58,15 @@
     <img src="../media/img-003.jpg" alt="Photogrammetry-scanned object">
     <p>Model created with KIRI Engine from photographs of a physical object. Used only to validate the scanning process.</p>
     <audio controls preload="none" src="../media/ra-003-en.wav"></audio>
+    <h2>3D model</h2>
+    <model-viewer src="../media/modelo-003.glb" alt="Photogrammetry-scanned object" camera-controls auto-rotate touch-action="pan-y"
+        shadow-intensity="0.8" ar ar-modes="scene-viewer webxr quick-look" ar-scale="auto">
+      <button slot="ar-button" class="boton principal ar">View in your space (AR)</button>
+    </model-viewer>
+    <p class="nota">Drag to rotate the model and pinch to zoom. If your phone supports it, “View in your space” places it on a real surface.</p>
     <a class="boton principal solo-android" href="intent://recurso/RA-003#Intent;scheme=guiara;package=mx.edu.itst.guiara;S.browser_fallback_url=https%3A%2F%2Fdiegodomherz.github.io%2FITST-RA-Piloto%2Fdescargar%2F;end">Open in the app (Augmented Reality)</a>
     <a class="boton secundario" href="https://diegodomherz.github.io/ITST-RA-Piloto/descargar/">Download the app</a>
-    <p class="nota">The Augmented Reality experience is available in the app. This page shows the content without AR.</p>
+    <p class="nota">AR on the guide illustration is available in the app. This page shows the content and the 3D model without installing it.</p>
   </section>
 </main>
 <script>

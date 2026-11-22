@@ -35,7 +35,44 @@ const estilo = `
   .secundario { border: 1px solid #c5c6d0; color: var(--azul); background: #fff; }
   .nota { font-size: 14px; color: #5d5e67; }
   section[lang]:not(.activo) { display: none; }
+  h2 { font-size: 18px; margin: 18px 0 8px; }
+  model-viewer { display: block; width: 100%; height: 340px; background: #fff; border-radius: 12px; --poster-color: #fff; }
+  model-viewer .ar { position: absolute; left: 12px; right: 12px; bottom: 12px; margin: 0; border: 0; font: inherit; font-weight: 600; cursor: pointer; }
 `;
+
+// Visor 3D web: <model-viewer> de Google. Permite girar el modelo y, en teléfonos con servicios
+// de RA (Scene Viewer en Android, Quick Look en iOS), colocarlo en el espacio sin instalar la app.
+const MODEL_VIEWER = '<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>';
+
+/** Genera un cubo GLB (lado en metros, color RGB 0–1) para el recurso de prueba que la app dibuja por código. */
+function crearCuboGlb(salida, lado, color) {
+    const h = lado / 2;
+    const caras = [[[1, 0, 0], [[h, -h, h], [h, -h, -h], [h, h, -h], [h, h, h]]], [[-1, 0, 0], [[-h, -h, -h], [-h, -h, h], [-h, h, h], [-h, h, -h]]],
+        [[0, 1, 0], [[-h, h, h], [h, h, h], [h, h, -h], [-h, h, -h]]], [[0, -1, 0], [[-h, -h, -h], [h, -h, -h], [h, -h, h], [-h, -h, h]]],
+        [[0, 0, 1], [[-h, -h, h], [h, -h, h], [h, h, h], [-h, h, h]]], [[0, 0, -1], [[h, -h, -h], [-h, -h, -h], [-h, h, -h], [h, h, -h]]]];
+    const pos = [], nor = [], idx = [];
+    caras.forEach(([n, vs], c) => { vs.forEach(v => { pos.push(...v); nor.push(...n); }); const b = c * 4; idx.push(b, b + 1, b + 2, b, b + 2, b + 3); });
+    const bPos = Buffer.from(new Float32Array(pos).buffer), bNor = Buffer.from(new Float32Array(nor).buffer), bIdx = Buffer.from(new Uint16Array(idx).buffer);
+    const bin = Buffer.concat([bPos, bNor, bIdx]);
+    const gltf = {
+        asset: { version: '2.0', generator: 'generar-recursos.mjs (Guía RA ITST)' },
+        scene: 0, scenes: [{ nodes: [0] }], nodes: [{ mesh: 0, name: 'Cubo' }],
+        meshes: [{ primitives: [{ attributes: { POSITION: 0, NORMAL: 1 }, indices: 2, material: 0 }] }],
+        materials: [{ pbrMetallicRoughness: { baseColorFactor: [...color, 1], metallicFactor: 0, roughnessFactor: 0.6 } }],
+        buffers: [{ byteLength: bin.length }],
+        bufferViews: [{ buffer: 0, byteOffset: 0, byteLength: bPos.length, target: 34962 }, { buffer: 0, byteOffset: bPos.length, byteLength: bNor.length, target: 34962 },
+            { buffer: 0, byteOffset: bPos.length + bNor.length, byteLength: bIdx.length, target: 34963 }],
+        accessors: [{ bufferView: 0, componentType: 5126, count: 24, type: 'VEC3', min: [-h, -h, -h], max: [h, h, h] },
+            { bufferView: 1, componentType: 5126, count: 24, type: 'VEC3' }, { bufferView: 2, componentType: 5123, count: 36, type: 'SCALAR' }],
+    };
+    let json = Buffer.from(JSON.stringify(gltf));
+    json = Buffer.concat([json, Buffer.alloc((4 - json.length % 4) % 4, 0x20)]);
+    const binPad = Buffer.concat([bin, Buffer.alloc((4 - bin.length % 4) % 4)]);
+    const encabezado = Buffer.alloc(12);
+    encabezado.write('glTF', 0); encabezado.writeUInt32LE(2, 4); encabezado.writeUInt32LE(12 + 8 + json.length + 8 + binPad.length, 8);
+    const chunk = (b, tipo) => { const c = Buffer.alloc(8); c.writeUInt32LE(b.length, 0); c.writeUInt32LE(tipo, 4); return Buffer.concat([c, b]); };
+    fs.writeFileSync(salida, Buffer.concat([encabezado, chunk(json, 0x4E4F534A), chunk(binPad, 0x004E4942)]));
+}
 
 // Cambia entre español e inglés según el idioma del navegador o el botón elegido
 const scriptIdioma = `
@@ -51,13 +88,14 @@ const scriptIdioma = `
   if (!/android/i.test(navigator.userAgent)) document.querySelectorAll('.solo-android').forEach(e => e.remove());
 `;
 
-const pagina = (titulo, cuerpo) => `<!doctype html>
+const pagina = (titulo, cuerpo, cabecera = '') => `<!doctype html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(titulo)} · Guía RA ITST</title>
 <style>${estilo}</style>
+${cabecera}
 </head>
 <body>
 <main>
@@ -85,6 +123,15 @@ const copiar = (ruta) => {
 for (const r of recursos) {
     const img = copiar(r.imagen);
     const audio = { es: copiar(r.audio_es), en: copiar(r.audio_en) };
+    // Modelo 3D para el visor web; el cubo de prueba se genera como GLB (azul ITST, 20 cm de lado)
+    let modelo = null;
+    if (r.tipo === 'cubo') {
+        const nombre = `cubo-${r.id.toLowerCase()}.glb`;
+        crearCuboGlb(path.join(media, nombre), 0.2, [0.0123, 0.1022, 0.3916]);
+        modelo = `../media/${nombre}`;
+    } else {
+        modelo = copiar(r.modelo);
+    }
     const descarga = `${BASE}/descargar/`;
     const intento = `intent://recurso/${r.id}#Intent;scheme=guiara;package=${PAQUETE};S.browser_fallback_url=${encodeURIComponent(descarga)};end`;
     const bloque = (l, nombre, desc, txt) => `
@@ -94,6 +141,12 @@ for (const r of recursos) {
     ${img ? `<img src="${img}" alt="${esc(nombre)}">` : ''}
     <p>${esc(desc)}</p>
     ${audio[l] ? `<audio controls preload="none" src="${audio[l]}"></audio>` : ''}
+    ${modelo ? `<h2>${txt.modelo}</h2>
+    <model-viewer src="${modelo}" alt="${esc(nombre)}" camera-controls auto-rotate touch-action="pan-y"
+        shadow-intensity="0.8" ar ar-modes="scene-viewer webxr quick-look" ar-scale="auto">
+      <button slot="ar-button" class="boton principal ar">${txt.ar}</button>
+    </model-viewer>
+    <p class="nota">${txt.girar}</p>` : ''}
     <a class="boton principal solo-android" href="${esc(intento)}">${txt.abrir}</a>
     <a class="boton secundario" href="${descarga}">${txt.descargar}</a>
     <p class="nota">${txt.nota}</p>
@@ -102,13 +155,19 @@ for (const r of recursos) {
         bloque('es', r.nombre_es, r.descripcion_es, {
             abrir: 'Abrir en la app (Realidad Aumentada)',
             descargar: 'Descargar la app',
-            nota: 'La experiencia de Realidad Aumentada se consulta desde la app. Esta página permite revisar el contenido sin RA.',
+            nota: 'La RA sobre la ilustración de la guía se consulta desde la app. Esta página permite revisar el contenido y el modelo 3D sin instalarla.',
+            modelo: 'Modelo 3D',
+            ar: 'Ver en tu espacio (RA)',
+            girar: 'Arrastra para girar el modelo y pellizca para acercarlo. Si tu teléfono lo permite, «Ver en tu espacio» lo coloca sobre una superficie real.',
         }) +
         bloque('en', r.nombre_en, r.descripcion_en, {
             abrir: 'Open in the app (Augmented Reality)',
             descargar: 'Download the app',
-            nota: 'The Augmented Reality experience is available in the app. This page shows the content without AR.',
-        }));
+            nota: 'AR on the guide illustration is available in the app. This page shows the content and the 3D model without installing it.',
+            modelo: '3D model',
+            ar: 'View in your space (AR)',
+            girar: 'Drag to rotate the model and pinch to zoom. If your phone supports it, “View in your space” places it on a real surface.',
+        }), MODEL_VIEWER);
     const dir = path.join(publico, 'recurso', r.id);
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(path.join(dir, 'index.html'), html);
