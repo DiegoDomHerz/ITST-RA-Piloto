@@ -231,6 +231,8 @@ fs.writeFileSync(path.join(dirRa, 'index.html'), `<!doctype html>
   .mensaje { flex: 1; }
   .ficha small { color: #5d5e67; } .ficha h2 { margin: 2px 0 6px; font-size: 20px; } .ficha p { margin: 0 0 10px; }
   .ficha a { color: #1E5AA8; font-weight: 600; }
+  /* A-Frame agrega por su cuenta botones de VR/AR que aquí no se usan y tapaban la ficha */
+  .a-enter-vr, .a-enter-ar, .a-enter-vr-button, .a-enter-ar-button { display: none !important; }
 </style>
 </head>
 <body>
